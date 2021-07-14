@@ -1,0 +1,61 @@
+< expr >        =   < comparg >
+                |   < comparg >     ==  < expr >
+
+
+
+< comparg >     =   < addend >
+                |   < addend >  +   < comparg >
+
+
+
+< addend >      =   < multicand >
+                |   < multicand >   *   < addend >
+
+
+
+< multicand >   =   < inner >
+                |   < multicand >   (   < expr >    )
+
+
+
+< inner >       =   < number >
+                |   (   < expr >    )
+                |   < variable >
+                |   _let    < variable>     =   < expr >    _in     < expr >
+                |   _true
+                |   _false
+                |   _if     < expr >    _then   < expr >    _else   < expr >
+                |   _fun    (   < vaiable > )   < expr >
+
+
+
+
+/**************************************
+    the following are my own ideas, above is taken from his slides
+***************************************/
+
+< var >         =   < var >
+
+
+
+< let >         =   _let    < variable>     =   < expr >    _in     < expr >
+
+
+
+< if >          =   _if     < expr >    _then   < expr >    _else   < expr >
+
+
+
+< fun >         =   _fun    (   < variable(std::string) > )   < expr >
+
+
+
+< keyword >     =   _let
+                |   _in
+                |   _if
+                |   _then
+                |   _else
+                |   _fun
+
+
+

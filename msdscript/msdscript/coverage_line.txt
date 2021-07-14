@@ -1,0 +1,376 @@
+/Users/rcmitchell/msdScript/msdscript/cmdline.cpp:
+    1|       |#include "cmdline.h"
+    2|       |#define CATCH_CONFIG_RUNNER
+    3|       |#include "catch.h"
+    4|       |#include <iostream>
+    5|       |#include <string.h>
+    6|       |#include <stdio.h>
+    7|       |
+    8|      1|void use_arguments(int argc, char **argv) {
+    9|      1|
+   10|      1|	bool test_bool = false;
+   11|      1|	char help[] = "--help";
+   12|      1|	char test[] = "--test";
+   13|      1|
+   14|      2|	for (int i = 1; i < argc; i++) {
+   15|      1|
+   16|      1|		if (strcmp(argv[i], help) == 0) {
+   17|      0|			std::cout << "Run the program again, but with a word to check this time.\n";
+   18|      0|			exit(1);
+   19|      1|		} else if (strcmp(argv[i], test) == 0 && test_bool == false) {
+   20|      1|			Catch::Session().run(1, argv);
+   21|      1|
+   22|      1|			test_bool = true;
+   23|      1|		} else if (strcmp(argv[i], test) == 0 && test_bool == true) {
+   24|      0|			std::cerr << "ERROR: already tested\n";
+   25|      0|			exit(1);
+   26|      0|		} else {
+   27|      0|			std::cerr << "ERROR";
+   28|      0|			exit(1);
+   29|      0|		}
+   30|      1|	}
+   31|      1|
+   32|      1|	return;
+   33|      1|}
+
+/Users/rcmitchell/msdScript/msdscript/expr.cpp:
+    1|       |#include "expr.h"
+    2|       |#include "stdio.h"
+    3|       |#include "catch.h"
+    4|       |#include <stdexcept>
+    5|       |#include <iostream>
+    6|       |#include <sstream>
+    7|       |
+    8|       |
+    9|       |
+   10|       |/*
+   11|       | * *************************************
+   12|       | * Methods for the Num class
+   13|       | * */
+   14|       |
+   15|     55| Num::Num(int val) {
+   16|     55|	this->val = val;
+   17|     55|}
+   18|       |
+   19|     14|bool Num::equals(Expr *e) {
+   20|     14|	Num *c = dynamic_cast<Num*>(e);
+   21|     14|	if (c == NULL)
+   22|     14|		return false;
+   23|     14|	else
+   24|     14|		return (this->val == c->val);
+   25|     14|}
+   26|       |
+   27|      9|int Num::interp() {
+   28|      9|	return this->val;
+   29|      9|}
+   30|       |
+   31|      7|bool Num::has_variable() {
+   32|      7|	return false;
+   33|      7|}
+   34|       |
+   35|      3|Expr* Num::subst(std::string s, Expr *e) {
+   36|      3|	return this;
+   37|      3|}
+   38|       |
+   39|      5|void Num::print(std::ostream& stream) {
+   40|      5|	stream << this->val;
+   41|      5|}
+   42|       |
+   43|      0|void Num::pretty_print_at(print_mode_t mode, std::ostream& stream) {
+   44|      0|	stream << this->val;
+   45|      0|}
+   46|       |
+   47|       |/*
+   48|       | * **************************************
+   49|       | * Methods for the Add class
+   50|       | * */
+   51|       |
+   52|     14|Add::Add(Expr *lhs, Expr *rhs) {
+   53|     14|	this->lhs = lhs;
+   54|     14|	this->rhs = rhs;
+   55|     14|}
+   56|       |
+   57|      4|bool Add::equals(Expr *e) {
+   58|      4|	Add *c = dynamic_cast<Add*>(e);
+   59|      4|	if (c == NULL)
+   60|      4|		return false;
+   61|      4|	else
+   62|      4|		return (this->lhs->equals(c->lhs) && this->rhs->equals(c->rhs));
+   63|      4|}
+   64|       |
+   65|      2|int Add::interp() {
+   66|      2|	return this->lhs->interp() + this->rhs->interp();
+   67|      2|}
+   68|       |
+   69|      2|bool Add::has_variable() {
+   70|      2|	return this->lhs->has_variable() || this->rhs->has_variable();
+   71|      2|}
+   72|       |
+   73|      1|Expr* Add::subst(std::string s, Expr *e) {
+   74|      1|	Add *newAdd = new Add(this->lhs->subst(s, e), this->rhs->subst(s, e));
+   75|      1|	return newAdd ;
+   76|      1|}
+   77|       |
+   78|      1|void Add::print(std::ostream& stream) {
+   79|      1|	stream << "(";
+   80|      1|	this->lhs->print(stream);
+   81|      1|	stream << "+";
+   82|      1|	this->rhs->print(stream);
+   83|      1|	stream << ")";
+   84|      1|}
+   85|       |
+   86|      0|void Add::pretty_print_at(print_mode_t mode, std::ostream& stream) {
+   87|      0|		if (mode >= print_group_add) {
+   88|      0|			stream << ")";
+   89|      0|		}
+   90|      0|		this->lhs->pretty_print_at(print_group_add, stream);
+   91|      0|		stream << " + ";
+   92|      0|		this->rhs->pretty_print_at(print_group_none, stream);
+   93|      0|		if (mode >= print_group_add) {
+   94|      0|			stream << ")";
+   95|      0|		}
+   96|      0|}
+   97|       |
+   98|       |/*
+   99|       | * ****************************************
+  100|       | * Methods for Mult class
+  101|       | * */
+  102|       |
+  103|     14|Mult::Mult(Expr *lhs, Expr *rhs) {
+  104|     14|	this->lhs = lhs;
+  105|     14|	this->rhs = rhs;
+  106|     14|}
+  107|       |
+  108|      4|bool Mult::equals(Expr *e) {
+  109|      4|	Mult *c = dynamic_cast<Mult*>(e);
+  110|      4|	if (c == NULL)
+  111|      4|		return false;
+  112|      4|	else
+  113|      4|		return (this->lhs->equals(c->lhs) && this->rhs->equals(c->rhs));
+  114|      4|}
+  115|       |
+  116|      2|int Mult::interp() {
+  117|      2|	return this->lhs->interp() * this->rhs->interp();
+  118|      2|}
+  119|       |
+  120|      2|bool Mult::has_variable() {
+  121|      2|	return this->lhs->has_variable() || this->rhs->has_variable();
+  122|      2|}
+  123|       |
+  124|      1|Expr* Mult::subst(std::string s, Expr *e) {
+  125|      1|	Mult *newMult = new Mult(this->lhs->subst(s, e), this->rhs->subst(s, e));
+  126|      1|	return newMult;
+  127|      1|}
+  128|       |
+  129|      1|void Mult::print(std::ostream& stream) {
+  130|      1|	stream << "(";
+  131|      1|	this->lhs->print(stream);
+  132|      1|	stream << "*";
+  133|      1|	this->rhs->print(stream);
+  134|      1|	stream << ")";
+  135|      1|}
+  136|       |
+  137|      0|void Mult::pretty_print_at(print_mode_t mode, std::ostream& stream) {
+  138|      0|	if (mode >= print_group_add_or_mult) {
+  139|      0|			stream << "(";
+  140|      0|	}
+  141|      0|	this->lhs->pretty_print_at(print_group_add_or_mult, stream);
+  142|      0|	stream << " * ";
+  143|      0|	this->rhs->pretty_print_at(print_group_add, stream);
+  144|      0|	if (mode >= print_group_add_or_mult) {
+  145|      0|		stream << ")";
+  146|      0|	}
+  147|      0|}
+  148|       |
+  149|       |/*
+  150|       | * *****************************************
+  151|       | * Methods for Variable class
+  152|       | * */
+  153|       |
+  154|     15|Variable::Variable(std::string val) {
+  155|     15|	this->val = val;
+  156|     15|}
+  157|       |
+  158|      4|bool Variable::equals(Expr *e) {
+  159|      4|	Variable *c = dynamic_cast<Variable*>(e);
+  160|      4|	if (c == NULL)
+  161|      4|		return false;
+  162|      4|	else
+  163|      4|		return (this->val == c->val);
+  164|      4|}
+  165|       |
+  166|      1|int Variable::interp() {
+  167|      1|	throw std::runtime_error("Oops! Variables don't have a value!");
+  168|      1|}
+  169|       |
+  170|      3|bool Variable::has_variable() {
+  171|      3|	return true;
+  172|      3|}
+  173|       |
+  174|      2|Expr* Variable::subst(std::string s, Expr *e) {
+  175|      2|	if (this->val.compare(s) == 0) {
+  176|      2|		return e;
+  177|      2|	}
+  178|      0|	return this;
+  179|      0|}
+  180|       |
+  181|      1|void Variable::print(std::ostream& stream) {
+  182|      1|	stream << this->val;
+  183|      1|}
+  184|       |
+  185|       |
+  186|      0|void Variable::pretty_print_at(print_mode_t mode, std::ostream& stream) {
+  187|      0|	stream << this->val;
+  188|      0|}
+  189|       |
+  190|       |
+  191|       |/*
+  192|       | * to_string method
+  193|       | * calls print() internally and returns a string;
+  194|       | * */
+  195|       |
+  196|      4|std::string Expr::to_string() {
+  197|      4|	std::stringstream out("");
+  198|      4|	this->print(out);
+  199|      4|	return out.str();
+  200|      4|}
+  201|       |
+  202|      0|void Expr::pretty_print(std::ostream& stream) {
+  203|      0|	print(stream);
+  204|      0|}
+  205|       |
+  206|      0|void Expr::pretty_print_at(print_mode_t mode, std::ostream& stream) {
+  207|      0|	print(stream);
+  208|      0|}
+  209|       |
+  210|       |/*
+  211|       | * *******************************************
+  212|       | * TESTS
+  213|       | * */
+  214|       |
+  215|       |/*
+  216|       | * Num() tests
+  217|       | * */
+  218|      1|TEST_CASE("Num equals") {
+  219|      1|	CHECK((new Num(1))->equals(new Num(1)) == true);
+  220|      1|	CHECK((new Num(1))->equals(new Num(2)) == false);
+  221|      1|}
+  222|       |
+  223|      1|TEST_CASE("Num interp") {
+  224|      1|	CHECK((new Num(1))->interp() == 1);
+  225|      1|}
+  226|       |
+  227|      1|TEST_CASE("Num has_variable") {
+  228|      1|	CHECK((new Num(1))->has_variable() == false); //has_variable should always return false when called on a Num
+  229|      1|}
+  230|       |
+  231|      1|TEST_CASE("Num subst") {
+  232|      1|	Num* n = new Num(1);
+  233|      1|	std::string s = "s";
+  234|      1|	Num* e = new Num(2);
+  235|      1|	CHECK(n == n->subst(s, e)); //if subst works, n->subst(...) should just return itself
+  236|      1|}
+  237|       |
+  238|      1|TEST_CASE("Num print") {
+  239|      1|	Num* one = new Num(1);
+  240|      1|	CHECK(one->to_string() == "1");
+  241|      1|}
+  242|       |
+  243|       |/*
+  244|       | * Add() tests
+  245|       | * */
+  246|       |
+  247|      1|TEST_CASE("Add equals") {
+  248|      1|	CHECK((new Add(new Num(2), new Num(2)))->equals(new Add(new Num(2), new Num(2))) == true);
+  249|      1|	CHECK((new Add(new Num(2), new Num(1)))->equals(new Add(new Num(2), new Num(1))) == true);
+  250|      1|	CHECK((new Add(new Num(2), new Num(1)))->equals(new Add(new Num(1), new Num(2))) == false);
+  251|      1|}
+  252|       |
+  253|      1|TEST_CASE("Add interp") {
+  254|      1|	CHECK((new Add(new Num(1), new Num(2)))->interp() == 3);
+  255|      1|	CHECK((new Add(new Num(2), new Num(3)))->interp() != 3);
+  256|      1|}
+  257|       |
+  258|      1|TEST_CASE("Add has_variable") {
+  259|      1|	CHECK((new Add(new Num(1), new Num(2)))->has_variable() == false);
+  260|      1|	CHECK((new Add(new Num(1), new Variable("a")))->has_variable() == true);	
+  261|      1|}
+  262|       |
+  263|      1|TEST_CASE("Add subst") {
+  264|      1|	CHECK( (new Add(new Variable("x"), new Num(7)))->subst("x", new Variable("y"))->equals(new Add(new Variable("y"), new Num(7))) );
+  265|      1|}
+  266|       |
+  267|      1|TEST_CASE("Add print") {
+  268|      1|	Num *one = new Num(1);
+  269|      1|	Num *two = new Num(2);
+  270|      1|	Add *test = new Add(one, two);
+  271|      1|	CHECK(test->to_string() == "(1+2)");
+  272|      1|}
+  273|       |
+  274|       |
+  275|       |
+  276|       |/*
+  277|       | * Mult() tests
+  278|       | * */
+  279|       |
+  280|      1|TEST_CASE("Mult equals") {
+  281|      1|	CHECK((new Mult(new Num(2), new Num(2)))->equals(new Mult(new Num(2), new Num(2))) == true);
+  282|      1|	CHECK((new Mult(new Num(2), new Num(2)))->equals(new Mult(new Num(2), new Num(2))) == true);
+  283|      1|	CHECK((new Mult(new Num(2), new Num(1)))->equals(new Mult(new Num(1), new Num(2))) == false);
+  284|      1|}
+  285|       |
+  286|      1|TEST_CASE("Mult interp") {
+  287|      1|	CHECK((new Mult(new Num(2), new Num(2)))->interp() == 4);
+  288|      1|	CHECK((new Mult(new Num(2), new Num(1)))->interp() != 3);
+  289|      1|}
+  290|       |
+  291|      1|TEST_CASE("Mult has_variable") {
+  292|      1|	CHECK((new Mult(new Num(1), new Num(2)))->has_variable() == false);
+  293|      1|	CHECK((new Mult(new Num(1), new Variable("a")))->has_variable() == true);
+  294|      1|}
+  295|       |
+  296|      1|TEST_CASE("Mult subst") {
+  297|      1|	CHECK( (new Mult(new Variable("x"), new Num(7)))->subst("x", new Variable("y"))->equals(new Mult(new Variable("y"), new Num(7))) );
+  298|      1|}
+  299|       |
+  300|      1|TEST_CASE("Mult print") {
+  301|      1|	Num *a = new Num(1);
+  302|      1|	Num *b = new Num(2);
+  303|      1|	Mult *test = new Mult(a, b);
+  304|      1|	CHECK(test->to_string() == "(1*2)");
+  305|      1|}
+  306|       |
+  307|       |/*
+  308|       | * Variable() tests
+  309|       | * */
+  310|       |
+  311|      1|TEST_CASE("Variable equals") {
+  312|      1|	CHECK((new Variable("a"))->equals(new Variable("a")) == true);
+  313|      1|	CHECK((new Variable("a"))->equals(new Variable("b")) == false);
+  314|      1|}
+  315|       |
+  316|      1|TEST_CASE("Variable interp") {
+  317|      1|	CHECK_THROWS_WITH( (new Variable("x"))->interp(), "Oops! Variables don't have a value!" );
+  318|      1|}
+  319|       |
+  320|      1|TEST_CASE("Variable has_variable") {
+  321|      1|	CHECK((new Variable("a"))->has_variable() == true);
+  322|      1|}
+  323|       |
+  324|      1|TEST_CASE("Variable print") {
+  325|      1|	Variable *test = new Variable("a");
+  326|      1|	CHECK(test->to_string() == "a");
+  327|      1|}
+
+/Users/rcmitchell/msdScript/msdscript/main.c:
+    1|       |#include <iostream>
+    2|       |#include "cmdline.h"
+    3|       |#include "catch.h"
+    4|       |
+    5|      1|int main(int argc, char **argv) {
+    6|      1|  use_arguments(argc, argv);
+    7|      1|
+    8|      1|
+    9|      1|  return 0;
+   10|      1|}
+

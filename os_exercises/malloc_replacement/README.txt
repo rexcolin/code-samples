@@ -1,0 +1,1 @@
+To run tests and benchmarks, just make the executable and run it. As long as the benchmarks runs, then it passed the assertions in the tests.

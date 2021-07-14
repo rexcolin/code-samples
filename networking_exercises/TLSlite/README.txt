@@ -1,0 +1,1 @@
+This is a simple version of the TLS protocol to send data using public key encryption. It was set up to run just on my computer, so I hard-coded the file paths, and it will not run without updating those. I also removed the keys and certifications, as they were expired anyway.
